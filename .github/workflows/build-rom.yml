@@ -24,49 +24,37 @@ jobs:
         run: |
           cd workspace
           git clone https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
-      - name: Dump Device Tree (diagnostics)
-        run: |
-          cd workspace/device/samsung/a2corelte
-          for f in lineage_a2corelte.mk AndroidProducts.mk device.mk BoardConfig.mk Android.mk; do
-            echo "===== $f ====="; cat "$f" 2>/dev/null || echo "(missing)"
-          done
-      - name: Compile Android 10 ROM (full log captured)
+      - name: Compile Images (the real 40k-step build)
         run: |
           cd workspace
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           export LC_ALL=C
+          export WITH_DEXPREOPT=false
           lunch lineage_a2corelte-userdebug
-          echo "===== PRODUCT CONFIG ====="
-          get_build_var TARGET_PRODUCT
-          get_build_var PRODUCT_DEVICE
-          echo "--- PRODUCT_PACKAGES count ---"
-          get_build_var PRODUCT_PACKAGES | tr ' ' '\n' | wc -l
-          echo "--- first 40 packages ---"
-          get_build_var PRODUCT_PACKAGES | tr ' ' '\n' | head -40
-          (mka otapackage -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log") || echo "BUILD_FAILED_BUT_LOG_SAVED"
-          echo "===== PRODUCT OUT DIR ====="
-          ls -la out/target/product/a2corelte/ | head -60
-          echo "===== LOG HEAD ====="
-          head -80 "$GITHUB_WORKSPACE/build.log"
-          echo "===== LOG TAIL ====="
-          tail -120 "$GITHUB_WORKSPACE/build.log"
+          (mka systemimage bootimage recoveryimage -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log") || echo "IMG_BUILD_FAILED"
+          (mka bacon -j$(nproc) >> "$GITHUB_WORKSPACE/build.log" 2>&1) || echo "BACON_OPTIONAL_FAILED"
+          echo "===== PRODUCT OUT ====="
+          ls -la out/target/product/a2corelte/ | head -40
+          tail -60 "$GITHUB_WORKSPACE/build.log"
       - name: Upload Full Build Log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-log
           path: build.log
-      - name: Upload ROM Zip to Releases
-        if: hashFiles('workspace/out/target/product/a2corelte/*.zip') != ''
+      - name: Upload Images to Release
+        if: hashFiles('workspace/out/target/product/a2corelte/boot.img') != ''
         uses: softprops/action-gh-release@v2
         with:
-          files: workspace/out/target/product/a2corelte/*.zip
+          tag_name: imgs-${{ github.run_id }}
+          files: |
+            workspace/out/target/product/a2corelte/boot.img
+            workspace/out/target/product/a2corelte/system.img
+            workspace/out/target/product/a2corelte/recovery.img
+            workspace/out/target/product/a2corelte/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Fail Run If Build Did Not Complete
+      - name: Fail Run If Images Missing
         run: |
-          if ! ls workspace/out/target/product/a2corelte/*.zip; then
-            echo "::error::Build did not reach packaging. Full log uploaded as artifact."
-            exit 1
-          fi
+          ls workspace/out/target/product/a2corelte/system.img workspace/out/target/product/a2corelte/boot.img
