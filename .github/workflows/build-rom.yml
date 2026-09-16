@@ -6,41 +6,44 @@ jobs:
     steps:
       - name: Maximize Runner Space
         uses: rokibhasansagar/slimhub_actions@main
-      - name: Setup Build Environment
+      - name: Swap Space
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 12
+      - name: Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison flex libssl-dev libncurses5-dev lz4 python2 zip unzip
-          sudo ln -sf /usr/bin/python2 /usr/bin/python
+          sudo apt-get install -y bc bison flex libssl-dev libncurses5-dev lz4 python2 zip unzip curl git
+      - name: Sync LineageOS 17.1
+        run: |
+          git config --global user.name "ci"
+          git config --global user.email "ci@local"
           mkdir -p ~/bin
           curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
           chmod a+x ~/bin/repo
-          sudo ln -sf ~/bin/repo /usr/local/bin/repo
-      - name: Sync LineageOS 17.1
-        run: |
           mkdir workspace && cd workspace
-          repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --depth=1
-          repo sync -c --no-tags --no-clone-bundle -j$(nproc)
-      - name: Inject Device Tree & Prebuilt Kernel
+          ~/bin/repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --depth=1
+          ~/bin/repo sync -c --no-tags --optimized-fetch --force-sync -j$(nproc)
+          rm -rf .repo
+          df -h /
+      - name: Inject Device Tree
         run: |
           cd workspace
           git clone https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
-      - name: Build system + boot images
+      - name: Build Images
         run: |
           cd workspace
           source build/envsetup.sh
-          export ALLOW_MISSING_DEPENDENCIES=true
-          export LC_ALL=C
+          export ALLOW_MISSING_DEPENDENCIES=true LC_ALL=C WITH_DEXPREOPT=false
           lunch lineage_a2corelte-userdebug
           mka systemimage bootimage -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
-          echo "===== PRODUCT OUT ====="
-          ls -la out/target/product/a2corelte/ | head -40
-      - name: Upload Full Build Log
+      - name: Upload Build Log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-log
           path: build.log
-      - name: Upload Images to Release
+      - name: Release Images
         if: hashFiles('workspace/out/target/product/a2corelte/system.img') != ''
         uses: softprops/action-gh-release@v2
         with:
@@ -50,6 +53,6 @@ jobs:
             workspace/out/target/product/a2corelte/boot.img
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Fail Run If Images Missing
+      - name: Verify Images
         run: |
-          ls workspace/out/target/product/a2corelte/system.img workspace/out/target/product/a2corelte/boot.img
+          ls -la workspace/out/target/product/a2corelte/system.img workspace/out/target/product/a2corelte/boot.img
