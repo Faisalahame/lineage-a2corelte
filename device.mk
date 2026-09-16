@@ -10,3 +10,8 @@ PRODUCT_PROPERTY_OVERRIDES += \
     dalvik.vm.heapsize=256m \
     dalvik.vm.heapstartsize=8m \
     dalvik.vm.heaptargetutilization=0.75
+
+# Temporary: strip BT stack until hardware bring-up
+PRODUCT_PACKAGES_REMOVE += \
+    Bluetooth \
+    BluetoothExt

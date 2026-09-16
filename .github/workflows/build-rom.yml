@@ -24,19 +24,16 @@ jobs:
         run: |
           cd workspace
           git clone https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
-      - name: Compile Images (the real 40k-step build)
+      - name: Build system + boot images
         run: |
           cd workspace
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           export LC_ALL=C
-          export WITH_DEXPREOPT=false
           lunch lineage_a2corelte-userdebug
-          (mka systemimage bootimage recoveryimage -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log") || echo "IMG_BUILD_FAILED"
-          (mka bacon -j$(nproc) >> "$GITHUB_WORKSPACE/build.log" 2>&1) || echo "BACON_OPTIONAL_FAILED"
+          mka systemimage bootimage -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
           echo "===== PRODUCT OUT ====="
           ls -la out/target/product/a2corelte/ | head -40
-          tail -60 "$GITHUB_WORKSPACE/build.log"
       - name: Upload Full Build Log
         if: always()
         uses: actions/upload-artifact@v4
@@ -44,15 +41,13 @@ jobs:
           name: build-log
           path: build.log
       - name: Upload Images to Release
-        if: hashFiles('workspace/out/target/product/a2corelte/boot.img') != ''
+        if: hashFiles('workspace/out/target/product/a2corelte/system.img') != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: imgs-${{ github.run_id }}
           files: |
-            workspace/out/target/product/a2corelte/boot.img
             workspace/out/target/product/a2corelte/system.img
-            workspace/out/target/product/a2corelte/recovery.img
-            workspace/out/target/product/a2corelte/*.zip
+            workspace/out/target/product/a2corelte/boot.img
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Fail Run If Images Missing
