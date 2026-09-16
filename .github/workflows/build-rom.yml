@@ -1,58 +1,50 @@
-name: Build LineageOS 17.1 (Android 10)
-on: [workflow_dispatch]
+name: Build LineageOS 17.1 (a2corelte)
+on: workflow_dispatch
 jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-      - name: Maximize Runner Space
+      - name: Free disk
         uses: rokibhasansagar/slimhub_actions@main
-      - name: Swap Space
-        uses: pierotofy/set-swap-space@master
-        with:
-          swap-size-gb: 12
-      - name: Dependencies
+      - name: Deps + libncurses5 (prebuilt clang r3289846 needs it)
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison flex libssl-dev libncurses5-dev lz4 python2 zip unzip curl git
-      - name: Sync LineageOS 17.1
+          sudo apt-get install -y bc bison flex libssl-dev libncurses5-dev lz4 zip unzip python2 curl wget git
+          wget -q http://archive.ubuntu.com/ubuntu/pool/universe/n/ncurses/libncurses5_6.2-0ubuntu2_amd64.deb || true
+          sudo dpkg -i libncurses5_6.2-0ubuntu2_amd64.deb || {
+            sudo ln -sf /usr/lib/x86_64-linux-gnu/libncurses.so.6 /usr/lib/x86_64-linux-gnu/libncurses.so.5
+            sudo ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5
+          }
+      - name: Sync LineageOS 17.1 + device tree
         run: |
-          git config --global user.name "ci"
-          git config --global user.email "ci@local"
-          mkdir -p ~/bin
-          curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-          chmod a+x ~/bin/repo
-          mkdir workspace && cd workspace
-          ~/bin/repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --depth=1
-          ~/bin/repo sync -c --no-tags --optimized-fetch --force-sync -j$(nproc)
-          rm -rf .repo
-          df -h /
-      - name: Inject Device Tree
+          mkdir -p src && cd src
+          git config --global user.name "ci"; git config --global user.email "ci@local"
+          repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --depth=1
+          mkdir -p .repo/local_manifests
+          cat > .repo/local_manifests/a2corelte.xml <<'XML'
+          <manifest>
+            <project path="device/samsung/a2corelte" name="Faisalahame/lineage-a2corelte" remote="github" revision="main"/>
+          </manifest>
+          XML
+          repo sync -c --no-tags --no-clone-bundle --force-sync -j$(nproc)
+      - name: Build
         run: |
-          cd workspace
-          git clone https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
-      - name: Build Images
-        run: |
-          cd workspace
+          cd src
           source build/envsetup.sh
-          export ALLOW_MISSING_DEPENDENCIES=true LC_ALL=C WITH_DEXPREOPT=false
+          export LC_ALL=C ALLOW_MISSING_DEPENDENCIES=true WITH_DEXPREOPT=false
           lunch lineage_a2corelte-userdebug
-          mka systemimage bootimage -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
-      - name: Upload Build Log
+          mka bacon -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+      - name: Upload log
         if: always()
         uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: build.log
-      - name: Release Images
-        if: hashFiles('workspace/out/target/product/a2corelte/system.img') != ''
+        with: { name: build-log, path: build.log }
+      - name: Release images
+        if: hashFiles('src/out/target/product/a2corelte/*.img') != ''
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: imgs-${{ github.run_id }}
+          tag_name: run-${{ github.run_id }}
           files: |
-            workspace/out/target/product/a2corelte/system.img
-            workspace/out/target/product/a2corelte/boot.img
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Verify Images
-        run: |
-          ls -la workspace/out/target/product/a2corelte/system.img workspace/out/target/product/a2corelte/boot.img
+            src/out/target/product/a2corelte/boot.img
+            src/out/target/product/a2corelte/system.img
+            src/out/target/product/a2corelte/*.zip
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
