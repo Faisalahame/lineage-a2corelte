@@ -1,6 +1,3 @@
-PRODUCT_COPY_FILES += \
-    device/samsung/a2corelte/prebuilt/Image:kernel
-
 # Low RAM optimizations for 1GB device
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.config.low_ram=true \
