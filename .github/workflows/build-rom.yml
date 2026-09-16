@@ -1,50 +1,52 @@
-name: Build LineageOS 17.1 (a2corelte)
-on: workflow_dispatch
+name: Build LineageOS 17.1 (Android 10)
+on: [workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-      - name: Free disk
+      - name: Maximize Runner Space
         uses: rokibhasansagar/slimhub_actions@main
-      - name: Deps + libncurses5 (prebuilt clang r3289846 needs it)
+      - name: Setup + install repo (PATH-safe)
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison flex libssl-dev libncurses5-dev lz4 zip unzip python2 curl wget git
-          wget -q http://archive.ubuntu.com/ubuntu/pool/universe/n/ncurses/libncurses5_6.2-0ubuntu2_amd64.deb || true
-          sudo dpkg -i libncurses5_6.2-0ubuntu2_amd64.deb || {
-            sudo ln -sf /usr/lib/x86_64-linux-gnu/libncurses.so.6 /usr/lib/x86_64-linux-gnu/libncurses.so.5
-            sudo ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5
-          }
-      - name: Sync LineageOS 17.1 + device tree
+          sudo apt-get install -y bc bison flex libssl-dev libncurses5-dev lz4 python2 zip unzip curl git
+          git config --global user.name "Faisalahame"
+          git config --global user.email "faisal@a2corelte.dev"
+          curl -s https://storage.googleapis.com/git-repo-downloads/repo | sudo tee /usr/local/bin/repo >/dev/null
+          sudo chmod a+x /usr/local/bin/repo
+          repo --version
+      - name: Sync LineageOS 17.1
         run: |
           mkdir -p src && cd src
-          git config --global user.name "ci"; git config --global user.email "ci@local"
           repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --depth=1
-          mkdir -p .repo/local_manifests
-          cat > .repo/local_manifests/a2corelte.xml <<'XML'
-          <manifest>
-            <project path="device/samsung/a2corelte" name="Faisalahame/lineage-a2corelte" remote="github" revision="main"/>
-          </manifest>
-          XML
-          repo sync -c --no-tags --no-clone-bundle --force-sync -j$(nproc)
+          repo sync -c --no-tags --no-clone-bundle --optimized-fetch -j$(nproc)
+      - name: Inject Device Tree
+        run: |
+          cd src
+          git clone --depth=1 https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
       - name: Build
         run: |
           cd src
           source build/envsetup.sh
-          export LC_ALL=C ALLOW_MISSING_DEPENDENCIES=true WITH_DEXPREOPT=false
+          export ALLOW_MISSING_DEPENDENCIES=true
+          export LC_ALL=C
+          export WITH_DEXPREOPT=false
           lunch lineage_a2corelte-userdebug
-          mka bacon -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
-      - name: Upload log
+          mka bacon -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log" || true
+          echo "===== PRODUCT OUT ====="; ls -la out/target/product/a2corelte/ || true
+          echo "===== LOG TAIL ====="; tail -n 200 "$GITHUB_WORKSPACE/build.log" || true
+          test -f out/target/product/a2corelte/lineage-*.zip
+      - name: Upload Build Log
         if: always()
         uses: actions/upload-artifact@v4
-        with: { name: build-log, path: build.log }
-      - name: Release images
-        if: hashFiles('src/out/target/product/a2corelte/*.img') != ''
+        with:
+          name: build-log
+          path: build.log
+      - name: Release ZIP
+        if: success()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: run-${{ github.run_id }}
-          files: |
-            src/out/target/product/a2corelte/boot.img
-            src/out/target/product/a2corelte/system.img
-            src/out/target/product/a2corelte/*.zip
-        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
+          files: src/out/target/product/a2corelte/lineage-*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
