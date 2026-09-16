@@ -15,3 +15,4 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_PACKAGES_REMOVE += \
     Bluetooth \
     BluetoothExt
+PRODUCT_COPY_FILES += device/samsung/a2corelte/rootdir/fstab.exynos7870:root/fstab.exynos7870

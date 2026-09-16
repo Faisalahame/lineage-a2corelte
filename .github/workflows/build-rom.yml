@@ -6,21 +6,31 @@ jobs:
     steps:
       - name: Maximize Runner Space
         uses: rokibhasansagar/slimhub_actions@main
-      - name: Setup + install repo (PATH-safe)
+      - name: Swap
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 12
+      - name: Deps (incl. python2 for LOS17 scripts)
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison flex libssl-dev libncurses5-dev lz4 python2 zip unzip curl git
-          git config --global user.name "Faisalahame"
-          git config --global user.email "faisal@a2corelte.dev"
-          curl -s https://storage.googleapis.com/git-repo-downloads/repo | sudo tee /usr/local/bin/repo >/dev/null
-          sudo chmod a+x /usr/local/bin/repo
-          repo --version
-      - name: Sync LineageOS 17.1
+          sudo add-apt-repository -y ppa:deadsnakes/ppa || true
+          sudo apt-get update
+          sudo apt-get install -y bc bison flex libssl-dev libncurses5-dev lz4 zip unzip curl git rsync python2.7 || true
+          sudo ln -sf /usr/bin/python2.7 /usr/bin/python2 || true
+          sudo ln -sf /usr/bin/python2 /usr/bin/python || sudo ln -sf /usr/bin/python3 /usr/bin/python
+      - name: Repo tool
+        run: |
+          mkdir -p ~/bin && curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo && chmod +x ~/bin/repo
+          git config --global user.name "ci"
+          git config --global user.email "ci@ci.local"
+      - name: Sync LOS 17.1
         run: |
           mkdir -p src && cd src
-          repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --depth=1
-          repo sync -c --no-tags --no-clone-bundle --optimized-fetch -j$(nproc)
-      - name: Inject Device Tree
+          ~/bin/repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --depth=1
+          ~/bin/repo sync -c --no-tags --no-clone-bundle --optimized-fetch -j$(nproc)
+          rm -rf .repo
+          df -h /
+      - name: Device tree
         run: |
           cd src
           git clone --depth=1 https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
@@ -28,25 +38,21 @@ jobs:
         run: |
           cd src
           source build/envsetup.sh
-          export ALLOW_MISSING_DEPENDENCIES=true
-          export LC_ALL=C
-          export WITH_DEXPREOPT=false
+          export LC_ALL=C ALLOW_MISSING_DEPENDENCIES=true WITH_DEXPREOPT=false
           lunch lineage_a2corelte-userdebug
-          mka bacon -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log" || true
-          echo "===== PRODUCT OUT ====="; ls -la out/target/product/a2corelte/ || true
-          echo "===== LOG TAIL ====="; tail -n 200 "$GITHUB_WORKSPACE/build.log" || true
-          test -f out/target/product/a2corelte/lineage-*.zip
-      - name: Upload Build Log
+          set -o pipefail
+          mka bacon -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+      - name: Upload full log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-log
           path: build.log
-      - name: Release ZIP
-        if: success()
+      - name: Release zip
+        if: hashFiles('src/out/target/product/a2corelte/*.zip') != ''
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: run-${{ github.run_id }}
-          files: src/out/target/product/a2corelte/lineage-*.zip
+          tag_name: rom-${{ github.run_id }}
+          files: src/out/target/product/a2corelte/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
