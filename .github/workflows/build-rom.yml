@@ -6,53 +6,53 @@ jobs:
     steps:
       - name: Maximize Runner Space
         uses: rokibhasansagar/slimhub_actions@main
-      - name: Deps
+      - name: Swap
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 12
+      - name: Deps + libncurses5 runtime (prebuilt clang r3289846)
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison flex libssl-dev libncurses5-dev lz4 python2 zip unzip curl git
-          sudo ln -sf /usr/bin/python2 /usr/bin/python
+          sudo apt-get install -y bc bison flex libssl-dev libncurses5-dev lz4 zip unzip curl git rsync
+          wget -q http://archive.ubuntu.com/ubuntu/pool/universe/n/ncurses/libncurses5_6.2-0ubuntu2_amd64.deb || true
+          sudo dpkg -i libncurses5_6.2-0ubuntu2_amd64.deb || {
+            sudo ln -sf /usr/lib/x86_64-linux-gnu/libncurses.so.6 /usr/lib/x86_64-linux-gnu/libncurses.so.5
+            sudo ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5; }
+          sudo apt-get install -y python2.7 || sudo ln -sf /usr/bin/python3 /usr/bin/python
       - name: Repo tool
         run: |
-          mkdir -p ~/bin
-          curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-          chmod a+x ~/bin/repo
-          echo "$HOME/bin" >> $GITHUB_PATH
-      - name: Sync LineageOS 17.1
+          mkdir -p ~/bin && curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo && chmod +x ~/bin/repo
+          git config --global user.name "ci"; git config --global user.email "ci@ci.local"
+      - name: Sync LOS 17.1
         run: |
           mkdir -p src && cd src
-          repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --depth=1
-          repo sync -c --no-tags --no-clone-bundle --optimized-fetch -j$(nproc)
+          ~/bin/repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --depth=1
+          ~/bin/repo sync -c --no-tags --no-clone-bundle --optimized-fetch -j$(nproc)
+          rm -rf .repo
       - name: Device tree
         run: |
           cd src
-          git clone https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
-      - name: Product sanity check
-        run: |
-          cd src
-          source build/envsetup.sh
-          lunch lineage_a2corelte-userdebug
-          echo "TARGET_DEVICE=$(get_build_var TARGET_DEVICE)"
-          echo "PRODUCT_PACKAGES count: $(get_build_var PRODUCT_PACKAGES | wc -w)"
-      - name: Build images (no bacon)
+          git clone --depth=1 https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
+      - name: Build images then package
         run: |
           cd src
           source build/envsetup.sh
           export LC_ALL=C ALLOW_MISSING_DEPENDENCIES=true WITH_DEXPREOPT=false
           lunch lineage_a2corelte-userdebug
-          mka systemimage bootimage -j$(nproc) 2>&1 | tee build.log
-      - name: Upload build log
+          set -o pipefail
+          mka systemimage bootimage -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+          mka bacon -j$(nproc) 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
+      - name: Upload log
         if: always()
         uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: src/build.log
-      - name: Release images
-        if: success()
+        with: { name: build-log, path: build.log }
+      - name: Release artifacts
+        if: hashFiles('src/out/target/product/a2corelte/boot.img') != ''
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: imgs-${{ github.run_id }}
+          tag_name: run-${{ github.run_id }}
           files: |
             src/out/target/product/a2corelte/boot.img
             src/out/target/product/a2corelte/system.img
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            src/out/target/product/a2corelte/*.zip
+        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }}
