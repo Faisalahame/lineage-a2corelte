@@ -1,0 +1,40 @@
+name: Build LineageOS 17.1 (Android 10)
+on: [workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Maximize Runner Space
+        uses: rokibhasansagar/slimhub_actions@main
+      - name: Setup Build Environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison flex libssl-dev libncurses5-dev lz4 python2 zip unzip
+          sudo ln -sf /usr/bin/python2 /usr/bin/python
+          mkdir -p ~/bin
+          curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod a+x ~/bin/repo
+          sudo ln -sf ~/bin/repo /usr/local/bin/repo
+      - name: Sync LineageOS 17.1
+        run: |
+          mkdir workspace && cd workspace
+          repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --depth=1
+          repo sync -c --no-tags --no-clone-bundle -j$(nproc)
+      - name: Inject Device Tree & Prebuilt Kernel
+        run: |
+          cd workspace
+          git clone https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
+      - name: Compile Android 10 ROM
+        run: |
+          cd workspace
+          source build/envsetup.sh
+          export ALLOW_MISSING_DEPENDENCIES=true
+          export LC_ALL=C
+          lunch lineage_a2corelte-userdebug
+          mka bacon -j$(nproc)
+      - name: Upload ROM Zip to Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: workspace/out/target/product/a2corelte/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
