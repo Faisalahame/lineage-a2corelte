@@ -1,3 +1,6 @@
+# Inherit the standard Android telephony base (This triggers the 40,000 step compile!)
+$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
+
 # Low RAM optimizations for 1GB device
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.config.low_ram=true \
