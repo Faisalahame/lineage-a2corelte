@@ -22,7 +22,8 @@ jobs:
       - name: Repo tool
         run: |
           mkdir -p ~/bin && curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo && chmod +x ~/bin/repo
-          git config --global user.name "ci"; git config --global user.email "ci@ci.local"
+          git config --global user.name "ci"
+          git config --global user.email "ci@ci.local"
       - name: Sync LOS 17.1
         run: |
           mkdir -p src && cd src
@@ -45,7 +46,9 @@ jobs:
       - name: Upload log
         if: always()
         uses: actions/upload-artifact@v4
-        with: { name: build-log, path: build.log }
+        with:
+          name: build-log
+          path: build.log
       - name: Release artifacts
         if: hashFiles('src/out/target/product/a2corelte/boot.img') != ''
         uses: softprops/action-gh-release@v2
@@ -55,4 +58,5 @@ jobs:
             src/out/target/product/a2corelte/boot.img
             src/out/target/product/a2corelte/system.img
             src/out/target/product/a2corelte/*.zip
-        env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
