@@ -1,3 +1,4 @@
+$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 $(call inherit-product, device/samsung/a2corelte/device.mk)
 $(call inherit-product, vendor/lineage/config/common_full_phone.mk)
 
