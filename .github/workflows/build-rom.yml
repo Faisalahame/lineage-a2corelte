@@ -34,15 +34,11 @@ jobs:
         run: |
           cd src
           git clone --depth=1 https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
-      - name: SURGICAL FIX: Kill broken prebuilt webview
+      - name: Surgical fix - kill broken prebuilt webview
         run: |
           cd src
-          # Delete the corrupted 0-byte webview directory completely
           rm -rf external/chromium-webview
-          # Force the build system to forget it ever existed
           echo 'PRODUCT_PACKAGES_REMOVE += webview' >> device/samsung/a2corelte/device.mk
-          # Patch the common makefile just in case it hardcodes webview
-          find vendor/lineage -name "*.mk" -exec sed -i 's/webview//g' {} + 2>/dev/null || true
       - name: Build images then package
         run: |
           cd src
