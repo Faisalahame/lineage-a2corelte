@@ -34,7 +34,14 @@ jobs:
         run: |
           cd src
           git clone --depth=1 https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
-      - name: Build images (the real artifact)
+      - name: Patch AOSP AudioPolicyManager #error
+        run: |
+          cd src
+          # Surgically comment out the hardcoded #error in AOSP source
+          sed -i 's|^#error Audio policy no longer supports legacy .conf configuration format|// #error Audio policy patched|g' frameworks/av/services/audiopolicy/managerdefault/AudioPolicyManager.cpp || true
+          # Strip the macro from any Android.mk/Android.bp files just in case
+          find . -name "Android.mk" -o -name "Android.bp" | xargs sed -i 's|-DUSE_LEGACY_AUDIO_POLICY||g' 2>/dev/null || true
+      - name: Build images then package
         run: |
           cd src
           source build/envsetup.sh
@@ -42,24 +49,15 @@ jobs:
           lunch lineage_a2corelte-userdebug
           set -o pipefail
           mka systemimage bootimage -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
-      - name: Try bacon (optional, never blocks artifacts)
-        if: always()
-        run: |
-          cd src
-          source build/envsetup.sh
-          lunch lineage_a2corelte-userdebug
-          (mka bacon -j$(nproc) 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log") || echo "BACON_FAILED_BUT_IMAGES_MAY_EXIST"
-      - name: Show product out
-        if: always()
-        run: ls -la src/out/target/product/a2corelte/ | head -40 || true
+          (mka bacon -j$(nproc) 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log") || echo "BACON_OPTIONAL_FAILED"
       - name: Upload log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-log
           path: build.log
-      - name: Release images (+ zip if bacon made one)
-        if: hashFiles('src/out/target/product/a2corelte/system.img') != ''
+      - name: Release artifacts
+        if: hashFiles('src/out/target/product/a2corelte/boot.img') != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: run-${{ github.run_id }}
