@@ -34,11 +34,18 @@ jobs:
         run: |
           cd src
           git clone --depth=1 https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
-      - name: Surgical fix - kill broken prebuilt webview
+      - name: Apply surgical patches
         run: |
           cd src
           rm -rf external/chromium-webview
           echo 'PRODUCT_PACKAGES_REMOVE += webview' >> device/samsung/a2corelte/device.mk
+          AUDIO_FILE="frameworks/av/services/audiopolicy/managerdefault/AudioPolicyManager.cpp"
+          if [ -f "$AUDIO_FILE" ]; then
+            sed -i 's|^#error Audio policy no longer supports legacy.*|// PATCHED|g' "$AUDIO_FILE"
+            echo "AudioPolicyManager patched successfully"
+          else
+            echo "WARNING: AudioPolicyManager.cpp not found!"
+          fi
       - name: Build images then package
         run: |
           cd src
