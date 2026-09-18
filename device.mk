@@ -17,3 +17,13 @@ PRODUCT_PACKAGES_REMOVE += \
     BluetoothExt
 PRODUCT_COPY_FILES += device/samsung/a2corelte/rootdir/fstab.exynos7870:root/fstab.exynos7870
 PRODUCT_PACKAGES_REMOVE += webview
+
+# Shrink system.img to fit physical partition
+PRODUCT_PACKAGES_REMOVE += \
+    Jelly \
+    Eleven \
+    AudioFX \
+    Recorder \
+    Snap \
+    ExactCalculator \
+    Terminal
