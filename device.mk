@@ -65,3 +65,19 @@ PRODUCT_PACKAGES_REMOVE += \
     PhotoTable \
     PrintRecommendationService \
     Updater
+
+# --- Bloat insurance: nothing a daily user touches ---
+PRODUCT_PACKAGES_REMOVE += \
+    Seedvault \
+    ManagedProvisioning \
+    PrintSpooler \
+    EasterEgg \
+    VisualizationWallpapers \
+    SharedStorageBackup \
+    WallpaperBackup
+
+# --- Shrink framework: single locale + no java debug info ---
+PRODUCT_LOCALES := en_US
+PRODUCT_SYSTEM_SERVER_DEBUG_INFO := false
+PRODUCT_OTHER_JAVA_DEBUG_INFO := false
+WITH_DEXPREOPT_DEBUG_INFO := false
