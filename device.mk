@@ -27,3 +27,41 @@ PRODUCT_PACKAGES_REMOVE += \
     Snap \
     ExactCalculator \
     Terminal
+
+# ==========================================
+# ANDROID 10 GO EDITION CONFIGURATION
+# ==========================================
+
+# Inherit AOSP Go defaults (Low Memory Killer tweaks, etc.)
+$(call inherit-product-if-exists, build/make/target/product/go_defaults.mk)
+$(call inherit-product-if-exists, build/target/product/go_defaults.mk)
+
+# Force Go Edition properties
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.config.low_ram=true \
+    ro.lmk.critical_upgrade=true \
+    ro.lmk.upgrade_pressure=40 \
+    ro.lmk.downgrade_pressure=60 \
+    ro.lmk.kill_heaviest_task_dup=true \
+    dalvik.vm.usejitprofiles=true \
+    pm.dexopt.boot=verify \
+    pm.dexopt.install=interpret-only \
+    pm.dexopt.bg-dexopt=speed-profile
+
+# Aggressively strip heavy non-Go apps to guarantee < 1.2GB system image
+PRODUCT_PACKAGES_REMOVE += \
+    Jelly \
+    Eleven \
+    AudioFX \
+    Recorder \
+    Snap \
+    ExactCalculator \
+    Terminal \
+    Email \
+    Exchange2 \
+    Profiles \
+    Backgrounds \
+    LiveWallpapersPicker \
+    PhotoTable \
+    PrintRecommendationService \
+    Updater
