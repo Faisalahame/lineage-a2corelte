@@ -115,4 +115,3 @@ USE_CUSTOM_AUDIO_POLICY := 0
 # Force decimal partition sizes to bypass Python3 int() hex bug in build_image.py
 BOARD_SYSTEMIMAGE_PARTITION_SIZE := 1200000000
 WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVERS := false
-WITH_DEXPREOPT := false

@@ -50,7 +50,7 @@ jobs:
         run: |
           cd src
           source build/envsetup.sh
-          export LC_ALL=C ALLOW_MISSING_DEPENDENCIES=true WITH_DEXPREOPT=false
+          export LC_ALL=C ALLOW_MISSING_DEPENDENCIES=true
           lunch lineage_a2corelte-userdebug
           set -o pipefail
           mka systemimage bootimage -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
