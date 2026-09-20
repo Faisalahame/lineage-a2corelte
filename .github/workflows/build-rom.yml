@@ -1,5 +1,7 @@
 name: Build LineageOS 17.1 (Android 10)
 on: [workflow_dispatch]
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-22.04
