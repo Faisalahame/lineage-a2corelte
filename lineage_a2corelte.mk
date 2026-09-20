@@ -7,4 +7,11 @@ PRODUCT_DEVICE := a2corelte
 PRODUCT_BRAND := samsung
 PRODUCT_MODEL := SM-A260G
 PRODUCT_MANUFACTURER := samsung
-$(call inherit-product, $(LOCAL_DIR)/final_overrides.mk)
+
+# ==========================================
+# <1GB NUCLEAR STRIP-DOWN (Appended directly to product mk)
+# ==========================================
+PRODUCT_LOCALES := en_US
+PRODUCT_PACKAGES_DEBUG :=
+PRODUCT_PACKAGES := $(filter-out Jelly Eleven AudioFX Recorder Snap Terminal Email Exchange2 Updater SeedVault ManagedProvisioning PrintSpooler EasterEgg Traceur PhotoTable LiveWallpapersPicker VisualizationWallpapers SharedStorageBackup WallpaperBackup BasicDreams MagicSmokeWallpapers PhaseBeam Galaxy4 HoloSpiralWallpaper NoiseField,$(PRODUCT_PACKAGES))
+PRODUCT_PACKAGES := $(filter-out IconPack% %SourceOverlay ClockFont%,$(PRODUCT_PACKAGES))
