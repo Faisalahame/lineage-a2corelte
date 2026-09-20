@@ -7,3 +7,4 @@ PRODUCT_DEVICE := a2corelte
 PRODUCT_BRAND := samsung
 PRODUCT_MODEL := SM-A260G
 PRODUCT_MANUFACTURER := samsung
+$(call inherit-product, $(LOCAL_DIR)/final_overrides.mk)
