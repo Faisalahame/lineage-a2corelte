@@ -36,6 +36,7 @@ jobs:
         run: |
           cd src
           git clone --depth=1 https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
+          git clone --depth=1 https://github.com/asarr22/NitrogenKernel_7570_Q.git kernel/samsung/universal7570
       - name: Apply surgical patches
         run: |
           cd src

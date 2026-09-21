@@ -33,7 +33,6 @@ BOARD_USERDATAIMAGE_PARTITION_SIZE := 0x334000000
 BOARD_CACHEIMAGE_PARTITION_SIZE    := 0x002800000
 BOARD_FLASH_BLOCK_SIZE := 131072
 
-TARGET_PREBUILT_KERNEL := device/samsung/a2corelte/prebuilt/Image
 TARGET_PREBUILT_DTB := device/samsung/a2corelte/prebuilt/dtb.img
 
 # Use this flag if the board has a ext4 partition larger than 2gb
@@ -118,3 +117,12 @@ BOARD_SYSTEMIMAGE_PARTITION_SIZE := 990000000
 BOARD_SYSTEMIMAGE_JOURNAL_SIZE := 0
 WITH_DEXPREOPT := false
 TARGET_NO_RECOVERY := true
+
+# ==========================================
+# COMPILE EXYNOS 7570 KERNEL FROM SOURCE (Android 10)
+# ==========================================
+TARGET_KERNEL_SOURCE := kernel/samsung/universal7570
+TARGET_KERNEL_CONFIG := exynos7570-j4lte_defconfig
+BOARD_KERNEL_IMAGE_NAME := Image
+TARGET_KERNEL_ARCH := arm64
+TARGET_KERNEL_HEADER_ARCH := arm64
