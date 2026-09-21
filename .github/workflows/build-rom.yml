@@ -47,6 +47,12 @@ jobs:
             sed -i 's|^#error Audio policy no longer supports legacy.*|// PATCHED|g' "$AUDIO_FILE"
             echo "AudioPolicyManager patched successfully"
           fi
+      - name: Patch Kernel Source
+        run: |
+          cd src
+          mkdir -p kernel/samsung/universal7570/fs/sdcardfs/q
+          touch kernel/samsung/universal7570/fs/sdcardfs/q/Kconfig
+          sed -i "s/ANDROID_MAJOR_VERSION/Q/g" kernel/samsung/universal7570/Kconfig || true
       - name: Build images then package
         run: |
           cd src
