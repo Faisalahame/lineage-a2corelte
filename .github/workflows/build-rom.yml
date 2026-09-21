@@ -36,12 +36,6 @@ jobs:
         run: |
           cd src
           git clone --depth=1 https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
-          mkdir -p kernel/samsung/a2corelte
-          echo "Downloading official SM-A260G kernel..."
-          curl -L -o kernel.tar.gz https://github.com/Faisalahame/android_kernel_samsung_a2corelte/releases/download/kernel-src/Kernel.tar.gz
-          tar -xzf kernel.tar.gz -C kernel/samsung/a2corelte
-          rm kernel.tar.gz
-          ls kernel/samsung/a2corelte/Makefile
       - name: Apply surgical patches
         run: |
           cd src

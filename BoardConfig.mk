@@ -133,8 +133,11 @@ TARGET_NO_RECOVERY := true
 # ==========================================
 # OFFICIAL SAMSUNG 3.18.91 KERNEL (A2 CORE)
 # ==========================================
-TARGET_KERNEL_SOURCE := kernel/samsung/a2corelte
-TARGET_KERNEL_CONFIG := exynos7870-a2corelte_defconfig
-BOARD_KERNEL_IMAGE_NAME := Image.gz-dtb
-TARGET_KERNEL_ARCH := arm64
-TARGET_KERNEL_HEADER_ARCH := arm64
+
+# ==========================================
+# REVERT TO PREBUILT 3.18.91 KERNEL (Working Binary)
+# ==========================================
+TARGET_PREBUILT_KERNEL := device/samsung/a2corelte/prebuilt/Image
+BOARD_KERNEL_CMDLINE := androidboot.hardware=samsungexynos7870 androidboot.selinux=permissive
+BOARD_KERNEL_BASE := 0x10000000
+BOARD_KERNEL_PAGESIZE := 2048
