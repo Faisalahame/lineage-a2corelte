@@ -121,8 +121,12 @@ TARGET_NO_RECOVERY := true
 # ==========================================
 # COMPILE EXYNOS 7570 KERNEL FROM SOURCE (Android 10)
 # ==========================================
-TARGET_KERNEL_SOURCE := kernel/samsung/universal7570
-TARGET_KERNEL_CONFIG := exynos7570-j4lte_defconfig
-BOARD_KERNEL_IMAGE_NAME := Image
+
+# ==========================================
+# OFFICIAL SAMSUNG 3.18.91 KERNEL (A2 CORE)
+# ==========================================
+TARGET_KERNEL_SOURCE := kernel/samsung/a2corelte
+TARGET_KERNEL_CONFIG := exynos7870-a2corelte_defconfig
+BOARD_KERNEL_IMAGE_NAME := Image.gz-dtb
 TARGET_KERNEL_ARCH := arm64
 TARGET_KERNEL_HEADER_ARCH := arm64

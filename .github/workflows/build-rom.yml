@@ -32,11 +32,16 @@ jobs:
           ~/bin/repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --depth=1
           ~/bin/repo sync -c --no-tags --no-clone-bundle --optimized-fetch -j$(nproc)
           rm -rf .repo
-      - name: Device tree
+      - name: Device tree + OFFICIAL Samsung Kernel
         run: |
           cd src
           git clone --depth=1 https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
-          git clone --depth=1 https://github.com/asarr22/NitrogenKernel_7570_Q.git kernel/samsung/universal7570
+          mkdir -p kernel/samsung/a2corelte
+          echo "Downloading official SM-A260G kernel..."
+          curl -L -o kernel.tar.gz https://github.com/Faisalahame/android_kernel_samsung_a2corelte/releases/download/kernel-src/Kernel.tar.gz
+          tar -xzf kernel.tar.gz -C kernel/samsung/a2corelte
+          rm kernel.tar.gz
+          ls kernel/samsung/a2corelte/Makefile
       - name: Apply surgical patches
         run: |
           cd src
@@ -45,27 +50,17 @@ jobs:
           AUDIO_FILE="frameworks/av/services/audiopolicy/managerdefault/AudioPolicyManager.cpp"
           if [ -f "$AUDIO_FILE" ]; then
             sed -i 's|^#error Audio policy no longer supports legacy.*|// PATCHED|g' "$AUDIO_FILE"
-            echo "AudioPolicyManager patched successfully"
           fi
-      - name: Patch Kernel Source
-        run: |
-          cd src
-          mkdir -p kernel/samsung/universal7570/fs/sdcardfs/q
-          touch kernel/samsung/universal7570/fs/sdcardfs/q/Kconfig
-          sed -i "s/ANDROID_MAJOR_VERSION/Q/g" kernel/samsung/universal7570/Kconfig || true
       - name: Build images then package
         run: |
           cd src
           source build/envsetup.sh
-          export LC_ALL=C ALLOW_MISSING_DEPENDENCIES=true
+          export LC_ALL=C ALLOW_MISSING_DEPENDENCIES=true ANDROID_MAJOR_VERSION=o
           lunch lineage_a2corelte-eng
           echo "=== CONFIG PROOF ==="
+          echo "KERNEL_SRC=$(get_build_var TARGET_KERNEL_SOURCE)"
+          echo "KERNEL_CFG=$(get_build_var TARGET_KERNEL_CONFIG)"
           echo "CAP=$(get_build_var BOARD_SYSTEMIMAGE_PARTITION_SIZE)"
-          echo "JOURNAL=$(get_build_var BOARD_SYSTEMIMAGE_JOURNAL_SIZE)"
-          echo "DEXPREOPT=$(get_build_var WITH_DEXPREOPT)"
-          echo "NORECOVERY=$(get_build_var TARGET_NO_RECOVERY)"
-          echo "LOCALES=$(get_build_var PRODUCT_LOCALES)"
-          echo "BLOATCOUNT=$(get_build_var PRODUCT_PACKAGES | tr ' ' '\n' | grep -cE '^(Jelly|Eleven|AudioFX|Recorder|Terminal|SeedVault|Updater|PrintSpooler)$')"
           echo "===================="
           set -o pipefail
           mka systemimage bootimage -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
