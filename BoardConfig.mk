@@ -125,6 +125,10 @@ TARGET_NO_RECOVERY := true
 # ==========================================
 # OFFICIAL SAMSUNG 3.18.91 KERNEL (A2 CORE)
 # ==========================================
+
+# ==========================================
+# OFFICIAL SAMSUNG 3.18.91 KERNEL (A2 CORE)
+# ==========================================
 TARGET_KERNEL_SOURCE := kernel/samsung/a2corelte
 TARGET_KERNEL_CONFIG := exynos7870-a2corelte_defconfig
 BOARD_KERNEL_IMAGE_NAME := Image.gz-dtb
