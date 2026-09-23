@@ -141,3 +141,4 @@ TARGET_PREBUILT_KERNEL := device/samsung/a2corelte/prebuilt/Image
 BOARD_KERNEL_CMDLINE := androidboot.hardware=samsungexynos7870 androidboot.selinux=permissive
 BOARD_KERNEL_BASE := 0x10000000
 BOARD_KERNEL_PAGESIZE := 2048
+TARGET_FLATTEN_APEX := true
