@@ -1,4 +1,4 @@
-name: Build LineageOS 16.0 (Android 9)
+name: Build LineageOS 17.1 (Android 10)
 on: [workflow_dispatch]
 permissions:
   contents: write
@@ -29,7 +29,7 @@ jobs:
       - name: Sync LOS 17.1
         run: |
           mkdir -p src && cd src
-          ~/bin/repo init -u https://github.com/LineageOS/android.git -b lineage-16.0 --depth=1
+          ~/bin/repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --depth=1
           ~/bin/repo sync -c --no-tags --no-clone-bundle --optimized-fetch -j$(nproc)
           rm -rf .repo
       - name: Device tree + OFFICIAL Samsung Kernel
