@@ -32,7 +32,7 @@ jobs:
           ~/bin/repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --depth=1
           ~/bin/repo sync -c --no-tags --no-clone-bundle --optimized-fetch -j$(nproc)
           rm -rf .repo
-      - name: Device tree + OFFICIAL Samsung Kernel
+      - name: Device tree + Vendor tree
         run: |
           cd src
           git clone --depth=1 https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
@@ -46,20 +46,18 @@ jobs:
           if [ -f "$AUDIO_FILE" ]; then
             sed -i 's|^#error Audio policy no longer supports legacy.*|// PATCHED|g' "$AUDIO_FILE"
           fi
-      - name: Build images then package
+      - name: Build systemimage and fetch patched boot.img
         run: |
           cd src
           source build/envsetup.sh
           export LC_ALL=C ALLOW_MISSING_DEPENDENCIES=true ANDROID_MAJOR_VERSION=o
           lunch lineage_a2corelte-eng
-          echo "=== CONFIG PROOF ==="
-          echo "KERNEL_SRC=$(get_build_var TARGET_KERNEL_SOURCE)"
-          echo "KERNEL_CFG=$(get_build_var TARGET_KERNEL_CONFIG)"
-          echo "CAP=$(get_build_var BOARD_SYSTEMIMAGE_PARTITION_SIZE)"
-          echo "===================="
-          set -o pipefail
-          mka systemimage bootimage -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
-          (mka bacon -j$(nproc) 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log") || echo "BACON_OPTIONAL_FAILED"
+          mka systemimage -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+          
+          echo "Downloading patched boot.img from kernel builder..."
+          gh release download -R Faisalahame/a2core-boot-builder -p "boot.img" -O out/target/product/a2corelte/boot.img --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload log
         if: always()
         uses: actions/upload-artifact@v4
