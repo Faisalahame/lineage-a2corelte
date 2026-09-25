@@ -142,3 +142,5 @@ BOARD_KERNEL_CMDLINE := androidboot.hardware=samsungexynos7870 androidboot.selin
 BOARD_KERNEL_BASE := 0x10000000
 BOARD_KERNEL_PAGESIZE := 2048
 TARGET_FLATTEN_APEX := true
+
+-include vendor/samsung/a2corelte/BoardConfigVendor.mk
