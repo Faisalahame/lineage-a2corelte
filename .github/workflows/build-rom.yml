@@ -53,7 +53,6 @@ jobs:
           export LC_ALL=C ALLOW_MISSING_DEPENDENCIES=true ANDROID_MAJOR_VERSION=o
           lunch lineage_a2corelte-eng
           mka systemimage -j$(nproc) 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
-          
           echo "Downloading patched boot.img from kernel builder..."
           gh release download -R Faisalahame/a2core-boot-builder -p "boot.img" -O out/target/product/a2corelte/boot.img --clobber
         env:
