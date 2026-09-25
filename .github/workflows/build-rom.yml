@@ -36,6 +36,7 @@ jobs:
         run: |
           cd src
           git clone --depth=1 https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
+          git clone --depth=1 https://github.com/Faisalahame/vendor_samsung_a2corelte.git vendor/samsung/a2corelte
       - name: Apply surgical patches
         run: |
           cd src
