@@ -53,7 +53,7 @@ jobs:
           touch "$GITHUB_WORKSPACE/build.log"
           mka systemimage -j$(nproc) 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
           echo "Downloading patched boot.img from kernel builder..."
-          gh release download -R Faisalahame/a2core-boot-builder -p "boot.img" -O out/target/product/a2corelte/boot.img --clobber
+          curl -sL -o out/target/product/a2corelte/boot.img https://github.com/Faisalahame/a2core-boot-builder/releases/latest/download/boot.img && ls -la out/target/product/a2corelte/boot.img
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload log
