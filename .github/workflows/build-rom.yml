@@ -44,16 +44,11 @@ jobs:
           if [ -f "$AUDIO_FILE" ]; then
             sed -i 's|^#error Audio policy no longer supports legacy.*|// PATCHED|g' "$AUDIO_FILE"
           fi
-      - name: Fetch patched boot.img (BEFORE envsetup ruins PATH)
+      - name: Fetch patched boot.img (Direct curl, no gh)
         run: |
           mkdir -p src/out/target/product/a2corelte
-          gh release download -R Faisalahame/a2core-boot-builder -D src/out/target/product/a2corelte/ --clobber
-          cd src/out/target/product/a2corelte/
-          for z in *.zip; do [ -f "$z" ] && unzip -o "$z"; done
-          if [ ! -f boot.img ] && [ -f Image ]; then mv Image boot.img; fi
-          ls -la boot.img
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          curl -sL -o src/out/target/product/a2corelte/boot.img https://github.com/Faisalahame/a2core-boot-builder/releases/download/patched-boot-v21/boot.img
+          ls -la src/out/target/product/a2corelte/boot.img
       - name: Build systemimage
         run: |
           cd src
@@ -69,7 +64,7 @@ jobs:
           name: build-log
           path: build.log
       - name: Release artifacts
-        if: hashFiles('src/out/target/product/a2corelte/boot.img') != ''
+        if: hashFiles('src/out/target/product/a2corelte/boot.img') != '' && hashFiles('src/out/target/product/a2corelte/system.img') != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: run-${{ github.run_id }}
