@@ -1,4 +1,2 @@
 
 # Vendor blobs fallback labels
-/system/vendor(/.*)?    u:object_r:vendor_file:s0
-/vendor(/.*)?           u:object_r:vendor_file:s0

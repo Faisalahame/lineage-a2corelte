@@ -85,4 +85,4 @@ PRODUCT_COPY_FILES += device/samsung/a2corelte/rootdir/fstab.samsungexynos7870:r
 
 # Inherit proprietary vendor blobs
 $(call inherit-product, vendor/samsung/a2corelte/device-vendor.mk)
-PRODUCT_COPY_FILES += device/samsung/a2corelte/rootdir/init.a2corelte.rc:$(TARGET_OUT)/etc/init/init.a2corelte.rc
+PRODUCT_COPY_FILES += device/samsung/a2corelte/rootdir/init.a2corelte.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/init.a2corelte.rc
