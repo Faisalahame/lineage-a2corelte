@@ -15,7 +15,7 @@ jobs:
       - name: Deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison flex libssl-dev lz4 zip unzip curl git rsync python3
+          sudo apt-get install -y bc bison flex libssl-dev lz4 zip unzip curl git rsync python3 file
           sudo ln -sf /usr/lib/x86_64-linux-gnu/libncurses.so.6 /usr/lib/x86_64-linux-gnu/libncurses.so.5
           sudo ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5
           sudo ln -sf /usr/bin/python3 /usr/bin/python
@@ -44,11 +44,21 @@ jobs:
           if [ -f "$AUDIO_FILE" ]; then
             sed -i 's|^#error Audio policy no longer supports legacy.*|// PATCHED|g' "$AUDIO_FILE"
           fi
-      - name: Fetch patched boot.img (Direct curl, no gh)
+      - name: Fetch patched boot.img (Dynamic API)
         run: |
           mkdir -p src/out/target/product/a2corelte
-          curl -sL -o src/out/target/product/a2corelte/boot.img https://github.com/Faisalahame/a2core-boot-builder/releases/download/patched-boot-v21/boot.img
-          ls -la src/out/target/product/a2corelte/boot.img
+          ASSET_URL=$(curl -sL https://api.github.com/repos/Faisalahame/a2core-boot-builder/releases/latest | grep "browser_download_url" | head -n 1 | cut -d '"' -f 4)
+          echo "Downloading kernel from: $ASSET_URL"
+          curl -sL -o src/out/target/product/a2corelte/kernel_asset "$ASSET_URL"
+          cd src/out/target/product/a2corelte/
+          file kernel_asset | grep -q "Zip" && unzip -o kernel_asset && rm kernel_asset
+          BOOT_FILE=$(find . -maxdepth 1 -type f \( -name "boot.img" -o -name "Image" -o -name "*.img" \) | head -n 1)
+          if [ -n "$BOOT_FILE" ]; then
+            mv "$BOOT_FILE" boot.img
+          else
+            mv kernel_asset boot.img
+          fi
+          ls -la boot.img
       - name: Build systemimage
         run: |
           cd src
