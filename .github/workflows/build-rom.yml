@@ -24,7 +24,7 @@ jobs:
           mkdir -p ~/bin && curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo && chmod +x ~/bin/repo
           git config --global user.name "ci"
           git config --global user.email "ci@ci.local"
-      - name: Device tree + Vendor tree (fail fast, before sync)
+      - name: Device tree + Vendor tree
         run: |
           mkdir -p src && cd src
           git clone --depth=1 https://github.com/Faisalahame/lineage-a2corelte.git device/samsung/a2corelte
@@ -44,7 +44,17 @@ jobs:
           if [ -f "$AUDIO_FILE" ]; then
             sed -i 's|^#error Audio policy no longer supports legacy.*|// PATCHED|g' "$AUDIO_FILE"
           fi
-      - name: Build systemimage and fetch patched boot.img
+      - name: Fetch patched boot.img (BEFORE envsetup ruins PATH)
+        run: |
+          mkdir -p src/out/target/product/a2corelte
+          gh release download -R Faisalahame/a2core-boot-builder -D src/out/target/product/a2corelte/ --clobber
+          cd src/out/target/product/a2corelte/
+          for z in *.zip; do [ -f "$z" ] && unzip -o "$z"; done
+          if [ ! -f boot.img ] && [ -f Image ]; then mv Image boot.img; fi
+          ls -la boot.img
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build systemimage
         run: |
           cd src
           source build/envsetup.sh
@@ -52,10 +62,6 @@ jobs:
           lunch lineage_a2corelte-eng
           touch "$GITHUB_WORKSPACE/build.log"
           mka systemimage -j$(nproc) 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
-          echo "Downloading patched boot.img from kernel builder..."
-          curl -sL -o out/target/product/a2corelte/boot.img https://github.com/Faisalahame/a2core-boot-builder/releases/latest/download/boot.img && ls -la out/target/product/a2corelte/boot.img
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload log
         if: always()
         uses: actions/upload-artifact@v4
